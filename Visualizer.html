@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elevator Algorithm Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ffd700, #ffed4e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+
+        .building {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .floor {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            min-height: 60px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 10px;
+            border-left: 4px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .floor:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .floor-number {
+            width: 60px;
+            font-weight: bold;
+            font-size: 18px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 8px;
+            margin-right: 20px;
+        }
+
+        .elevators-container {
+            display: flex;
+            gap: 15px;
+            flex: 1;
+        }
+
+        .elevator {
+            width: 80px;
+            height: 45px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            position: relative;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid transparent;
+            overflow: hidden;
+        }
+
+        .elevator::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .elevator:hover::before {
+            opacity: 1;
+        }
+
+        .elevator.moving-up {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            animation: moveUp 0.8s ease-in-out;
+            box-shadow: 0 -5px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .elevator.moving-down {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            animation: moveDown 0.8s ease-in-out;
+            box-shadow: 0 5px 15px rgba(250, 112, 154, 0.4);
+        }
+
+        .elevator.stopped {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            box-shadow: 0 0 15px rgba(168, 237, 234, 0.4);
+        }
+
+        .elevator.active {
+            border-color: #ffd700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+
+        @keyframes moveUp {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes moveDown {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(10px); }
+        }
+
+        .waiting-passengers {
+            margin-left: 20px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .passenger {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .passenger::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .passenger:hover::before {
+            left: 100%;
+        }
+
+        .data-input {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .data-input textarea {
+            width: 100%;
+            max-width: 800px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            color: white;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            backdrop-filter: blur(10px);
+        }
+
+        .data-input textarea::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .progress-bar {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 25px;
+            height: 8px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #ffd700, #ffed4e);
+            height: 100%;
+            border-radius: 25px;
+            transition: width 0.5s ease;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .turn-info {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .error-message {
+            background: rgba(255, 0, 0, 0.2);
+            border: 1px solid rgba(255, 0, 0, 0.5);
+            color: #ffcccc;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .elevator {
+                width: 60px;
+                height: 35px;
+                font-size: 12px;
+            }
+            
+            .floor-number {
+                width: 50px;
+                font-size: 16px;
+            }
+            
+            .controls {
+                gap: 10px;
+            }
+            
+            .btn {
+                padding: 10px 20px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏢 Elevator Algorithm Visualizer</h1>
+            <p>Real-time visualization of your elevator scheduling algorithm</p>
+        </div>
+
+        <div class="data-input">
+            <textarea id="logData" placeholder="Paste your C program output here...&#10;&#10;Example format:&#10;TURN_START:1&#10;ELEVATOR:0,5,u,2,1&#10;RIDER_IN_ELV:0,101,3,8&#10;RIDER_WAITING:0,102,7,2&#10;STATS:1,2,1,5&#10;TURN_END:1"></textarea>
+            <br><br>
+            <button class="btn" onclick="parseData()">🚀 Load Data</button>
+        </div>
+
+        <div id="errorContainer"></div>
+
+        <div class="controls">
+            <button class="btn" onclick="prevTurn()" id="prevBtn">⏮️ Previous</button>
+            <button class="btn" onclick="playPause()" id="playBtn">▶️ Play</button>
+            <button class="btn" onclick="nextTurn()" id="nextBtn">⏭️ Next</button>
+            <button class="btn" onclick="resetVisualization()">🔄 Reset</button>
+            <select class="btn" id="speedControl" onchange="changeSpeed()">
+                <option value="2000">Slow (2s)</option>
+                <option value="1000" selected>Normal (1s)</option>
+                <option value="500">Fast (0.5s)</option>
+                <option value="200">Very Fast (0.2s)</option>
+            </select>
+        </div>
+
+        <div class="turn-info" id="turnInfo">
+            Ready to load data
+        </div>
+
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="currentTurn">0</div>
+                <div>Current Turn</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalPickups">0</div>
+                <div>Total Pickups</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalDrops">0</div>
+                <div>Total Drops</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalFulfilled">0</div>
+                <div>Requests Fulfilled</div>
+            </div>
+        </div>
+
+        <div class="building" id="building">
+            <!-- Building floors will be generated here -->
+        </div>
+    </div>
+
+    <script>
+        let simulationData = [];
+        let currentTurnIndex = 0;
+        let isPlaying = false;
+        let playInterval = null;
+        let playSpeed = 1000;
+        let numElevators = 0;
+        let numFloors = 0;
+
+        function showError(message) {
+            const errorContainer = document.getElementById('errorContainer');
+            errorContainer.innerHTML = `<div class="error-message">${message}</div>`;
+            setTimeout(() => {
+                errorContainer.innerHTML = '';
+            }, 5000);
+        }
+
+        function parseData() {
+            const logText = document.getElementById('logData').value;
+            if (!logText.trim()) {
+                showError('Please paste your C program output first!');
+                return;
+            }
+
+            try {
+                simulationData = [];
+                const lines = logText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+                
+                let currentTurn = null;
+                let maxFloor = 0;
+                let elevatorSet = new Set();
+                let turnNumber = 0;
+
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+
+                    if (line.startsWith('TURN_START:')) {
+                        turnNumber = parseInt(line.split(':')[1]);
+                        currentTurn = {
+                            turn: turnNumber,
+                            elevators: {},
+                            stats: null
+                        };
+                    } else if (line.startsWith('ELEVATOR:')) {
+                        if (!currentTurn) {
+                            // If no TURN_START, create a turn
+                            currentTurn = {
+                                turn: turnNumber++,
+                                elevators: {},
+                                stats: null
+                            };
+                        }
+
+                        const parts = line.split(':')[1].split(',');
+                        if (parts.length !== 5) {
+                            console.warn(`Invalid ELEVATOR format: ${line}`);
+                            continue;
+                        }
+
+                        const elevId = parseInt(parts[0]);
+                        const floor = parseInt(parts[1]);
+                        const direction = parts[2];
+                        const load = parseInt(parts[3]);
+                        const waiting = parseInt(parts[4]);
+
+                        if (isNaN(elevId) || isNaN(floor) || isNaN(load) || isNaN(waiting)) {
+                            console.warn(`Invalid ELEVATOR data: ${line}`);
+                            continue;
+                        }
+
+                        elevatorSet.add(elevId);
+                        maxFloor = Math.max(maxFloor, floor);
+                        
+                        currentTurn.elevators[elevId] = {
+                            id: elevId,
+                            floor: floor,
+                            direction: direction,
+                            load: load,
+                            waiting: waiting,
+                            ridersInside: [],
+                            ridersWaiting: []
+                        };
+                    } else if (line.startsWith('RIDER_IN_ELV:')) {
+                        if (!currentTurn) continue;
+                        
+                        const parts = line.split(':')[1].split(',');
+                        if (parts.length !== 4) continue;
+
+                        const elevId = parseInt(parts[0]);
+                        const riderId = parseInt(parts[1]);
+                        const start = parseInt(parts[2]);
+                        const dest = parseInt(parts[3]);
+
+                        if (isNaN(elevId) || isNaN(riderId) || isNaN(start) || isNaN(dest)) continue;
+
+                        maxFloor = Math.max(maxFloor, start, dest);
+                        
+                        if (currentTurn.elevators[elevId]) {
+                            currentTurn.elevators[elevId].ridersInside.push({
+                                id: riderId,
+                                start: start,
+                                dest: dest
+                            });
+                        }
+                    } else if (line.startsWith('RIDER_WAITING:')) {
+                        if (!currentTurn) continue;
+
+                        const parts = line.split(':')[1].split(',');
+                        if (parts.length !== 4) continue;
+
+                        const elevId = parseInt(parts[0]);
+                        const riderId = parseInt(parts[1]);
+                        const start = parseInt(parts[2]);
+                        const dest = parseInt(parts[3]);
+
+                        if (isNaN(elevId) || isNaN(riderId) || isNaN(start) || isNaN(dest)) continue;
+
+                        maxFloor = Math.max(maxFloor, start, dest);
+                        
+                        if (currentTurn.elevators[elevId]) {
+                            currentTurn.elevators[elevId].ridersWaiting.push({
+                                id: riderId,
+                                start: start,
+                                dest: dest
+                            });
+                        }
+                    } else if (line.startsWith('STATS:')) {
+                        if (!currentTurn) continue;
+                        console.log("Came here for STATS line:", line);
+                        const parts = line.split(':')[1].split(',');
+                        if (parts.length !== 4) continue;
+
+                        const turn = parseInt(parts[0]);
+                        const pickups = parseInt(parts[1]);
+                        const drops = parseInt(parts[2]);
+                        const fulfilled = parseInt(parts[3]);
+
+                        console.log("Parsed STATS:", turn, pickups, drops, fulfilled);
+
+                        if (isNaN(turn) || isNaN(pickups) || isNaN(drops) || isNaN(fulfilled)) continue;
+
+                        // Store the actual values from the STATS line - these should be cumulative totals
+                        currentTurn.stats = {
+                            turn: turn,
+                            pickups: pickups,
+                            drops: drops,
+                            fulfilled: fulfilled
+                        };
+                    } else if (line.startsWith('TURN_END:')) {
+                        if (currentTurn) {
+                            // Only add turn if it has elevator data
+                            if (Object.keys(currentTurn.elevators).length > 0) {
+                                simulationData.push(currentTurn);
+                            }
+                            currentTurn = null;
+                        }
+                    }
+                }
+
+                // Add any remaining turn that didn't have TURN_END
+                if (currentTurn && Object.keys(currentTurn.elevators).length > 0) {
+                    simulationData.push(currentTurn);
+                }
+
+                numElevators = elevatorSet.size;
+                numFloors = maxFloor + 1;
+
+                if (simulationData.length === 0) {
+                    showError('No valid turn data found. Please check the format.');
+                    return;
+                }
+
+                if (numElevators === 0) {
+                    showError('No elevator data found. Please check the format.');
+                    return;
+                }
+
+                generateBuilding();
+                currentTurnIndex = 0;
+                updateVisualization();
+                
+                document.getElementById('turnInfo').textContent = 
+                    `Data loaded successfully! ${simulationData.length} turns, ${numElevators} elevators, ${numFloors} floors`;
+
+            } catch (error) {
+                showError(`Error parsing data: ${error.message}`);
+                console.error('Parsing error:', error);
+            }
+        }
+
+        function generateBuilding() {
+            const building = document.getElementById('building');
+            building.innerHTML = '';
+
+            for (let floor = numFloors - 1; floor >= 0; floor--) {
+                const floorDiv = document.createElement('div');
+                floorDiv.className = 'floor';
+                floorDiv.innerHTML = `
+                    <div class="floor-number">${floor}</div>
+                    <div class="elevators-container" id="floor-${floor}">
+                        ${Array(numElevators).fill(0).map((_, i) => 
+                            `<div class="elevator" id="elevator-${i}-floor-${floor}"></div>`
+                        ).join('')}
+                    </div>
+                    <div class="waiting-passengers" id="waiting-${floor}"></div>
+                `;
+                building.appendChild(floorDiv);
+            }
+        }
+
+        function updateVisualization() {
+            if (simulationData.length === 0) return;
+
+            const turnData = simulationData[currentTurnIndex];
+            
+            // Clear all elevators
+            document.querySelectorAll('.elevator').forEach(elv => {
+                elv.textContent = '';
+                elv.className = 'elevator';
+                elv.title = '';
+            });
+
+            // Clear waiting areas
+            document.querySelectorAll('.waiting-passengers').forEach(area => {
+                area.innerHTML = '';
+            });
+
+            // Update elevators
+            Object.values(turnData.elevators).forEach(elevator => {
+                const elevatorElement = document.getElementById(`elevator-${elevator.id}-floor-${elevator.floor}`);
+                if (elevatorElement) {
+                    elevatorElement.textContent = `E${elevator.id}(${elevator.load})`;
+                    elevatorElement.className = 'elevator active';
+                    
+                    if (elevator.direction === 'u') {
+                        elevatorElement.classList.add('moving-up');
+                    } else if (elevator.direction === 'd') {
+                        elevatorElement.classList.add('moving-down');
+                    } else {
+                        elevatorElement.classList.add('stopped');
+                    }
+
+                    // Add tooltip with rider info
+                    let tooltip = `Elevator ${elevator.id}\nFloor: ${elevator.floor}\nLoad: ${elevator.load}\nDirection: ${elevator.direction}\nWaiting: ${elevator.waiting}`;
+                    if (elevator.ridersInside.length > 0) {
+                        tooltip += '\nPassengers inside:';
+                        elevator.ridersInside.forEach(rider => {
+                            tooltip += `\n  #${rider.id}: ${rider.start}→${rider.dest}`;
+                        });
+                    }
+                    elevatorElement.title = tooltip;
+                }
+
+                // Show waiting passengers
+                elevator.ridersWaiting.forEach(rider => {
+                    const waitingArea = document.getElementById(`waiting-${rider.start}`);
+                    if (waitingArea) {
+                        const passengerDiv = document.createElement('div');
+                        passengerDiv.className = 'passenger';
+                        passengerDiv.textContent = `#${rider.id}→${rider.dest}`;
+                        passengerDiv.title = `Passenger ${rider.id}: Floor ${rider.start} → Floor ${rider.dest}`;
+                        waitingArea.appendChild(passengerDiv);
+                    }
+                });
+            });
+
+            // Update stats - use the values directly from the stats object
+            document.getElementById('currentTurn').textContent = turnData.turn;
+            if (turnData.stats) {
+                document.getElementById('totalPickups').textContent = turnData.stats.pickups;
+                document.getElementById('totalDrops').textContent = turnData.stats.drops;
+                document.getElementById('totalFulfilled').textContent = turnData.stats.fulfilled;
+            }// } else {
+            //     // If no stats available for this turn, show 0
+            //     document.getElementById('totalPickups').textContent = '0';
+            //     document.getElementById('totalDrops').textContent = '0';
+            //     document.getElementById('totalFulfilled').textContent = '0';
+            // }
+
+            // Update progress
+            const progress = ((currentTurnIndex + 1) / simulationData.length) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+
+            // Update controls
+            document.getElementById('prevBtn').disabled = currentTurnIndex === 0;
+            document.getElementById('nextBtn').disabled = currentTurnIndex === simulationData.length - 1;
+
+            // Update turn info
+            document.getElementById('turnInfo').textContent = 
+                `Turn ${turnData.turn} (${currentTurnIndex + 1}/${simulationData.length})`;
+        }
+
+        function nextTurn() {
+            if (currentTurnIndex < simulationData.length - 1) {
+                currentTurnIndex++;
+                updateVisualization();
+            }
+        }
+
+        function prevTurn() {
+            if (currentTurnIndex > 0) {
+                currentTurnIndex--;
+                updateVisualization();
+            }
+        }
+
+        function playPause() {
+            if (isPlaying) {
+                clearInterval(playInterval);
+                isPlaying = false;
+                document.getElementById('playBtn').textContent = '▶️ Play';
+            } else {
+                playInterval = setInterval(() => {
+                    if (currentTurnIndex < simulationData.length - 1) {
+                        nextTurn();
+                    } else {
+                        playPause(); // Stop when reaching the end
+                    }
+                }, playSpeed);
+                isPlaying = true;
+                document.getElementById('playBtn').textContent = '⏸️ Pause';
+            }
+        }
+
+        function resetVisualization() {
+            clearInterval(playInterval);
+            isPlaying = false;
+            document.getElementById('playBtn').textContent = '▶️ Play';
+            currentTurnIndex = 0;
+            if (simulationData.length > 0) {
+                updateVisualization();
+            }
+        }
+
+        function changeSpeed() {
+            playSpeed = parseInt(document.getElementById('speedControl').value);
+            if (isPlaying) {
+                playPause();
+                playPause();
+            }
+        }
+
+        // Clean sample data for demonstration
+        document.addEventListener('DOMContentLoaded', function() {
+            const sampleData = `TURN_START:0
+ELEVATOR:0,0,u,0,1
+RIDER_WAITING:0,0,1,4
+ELEVATOR:1,0,s,0,0
+ELEVATOR:2,0,s,0,0
+STATS:0,0,0,0
+TURN_END:0
+
+TURN_START:1
+ELEVATOR:0,1,u,1,1
+RIDER_IN_ELV:0,0,1,4
+RIDER_WAITING:0,1,2,5
+ELEVATOR:1,0,s,0,0
+ELEVATOR:2,0,s,0,0
+STATS:1,1,0,0
+TURN_END:1
+
+TURN_START:2
+ELEVATOR:0,2,u,2,1
+RIDER_IN_ELV:0,0,1,4
+RIDER_IN_ELV:0,1,2,5
+RIDER_WAITING:0,2,3,9
+ELEVATOR:1,0,s,0,0
+ELEVATOR:2,0,s,0,0
+STATS:2,2,0,0
+TURN_END:2
+
+TURN_START:3
+ELEVATOR:0,3,u,3,0
+RIDER_IN_ELV:0,0,1,4
+RIDER_IN_ELV:0,1,2,5
+RIDER_IN_ELV:0,2,3,9
+ELEVATOR:1,0,s,0,0
+ELEVATOR:2,0,s,0,0
+STATS:3,3,0,0
+TURN_END:3
+
+TURN_START:4
+ELEVATOR:0,4,u,2,0
+RIDER_IN_ELV:0,1,2,5
+RIDER_IN_ELV:0,2,3,9
+ELEVATOR:1,0,s,0,0
+ELEVATOR:2,0,s,0,0
+STATS:4,3,1,1
+TURN_END:4
+
+TURN_START:5
+ELEVATOR:0,5,u,1,0
+RIDER_IN_ELV:0,2,3,9
+ELEVATOR:1,0,s,0,0
+ELEVATOR:2,0,s,0,0
+STATS:5,3,2,2
+TURN_END:5
+
+TURN_START:6
+ELEVATOR:0,9,s,0,0
+ELEVATOR:1,0,s,0,0
+ELEVATOR:2,0,s,0,0
+STATS:6,3,3,3
+TURN_END:6`;
+            
+            document.getElementById('logData').value = sampleData;
+        });
+    </script>
+</body>
+</html>
