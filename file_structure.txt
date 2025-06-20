@@ -1,0 +1,10 @@
+elevator-backend/
+├── main.py              # FastAPI app entry
+├── controller.py        # Manages subprocesses (helper + solution)
+├── state.py             # Tracks current state (turns, requests, etc.)
+├── parser.py            # Parses output.txt into structured JSON
+├── testcase_writer.py   # Dynamically builds testcase.txt
+├── shared/              # Runtime folder for helper & solution
+│   ├── testcase.txt
+│   ├── input.txt
+│   ├── output.txt
